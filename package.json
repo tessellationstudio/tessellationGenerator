@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "browser-sync": "^3.0.3",
+    "manifold-3d": "^2.5.1",
+    "three": "^0.169.0"
+  }
+}

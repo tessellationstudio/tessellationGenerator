@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <title>Manifold - three.js Example</title>
+  <meta charset="utf-8">
+  <meta name="application-name" content="RingGen" />
+  <meta name="apple-mobile-web-app-title" content="RingGen" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <link rel="apple-touch-icon" href="/icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" type="image/png" href="https://elalish.github.io/manifold/samples/models/favicon.png" />
+  <style>
+    body {
+      margin: 0;
+      background-color: #f7f7f7;
+      font-family: 'Rubik', sans-serif;
+      font-size: 16px;
+      line-height: 24px;
+      color: rgba(0, 0, 0, .87);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vw;
+      max-width: 600px;
+      max-height: 600px;
+    }
+  </style>
+  <script type="module" crossorigin src="./three.js"></script>
+</head>
+
+<body>
+  <H1 id="ringSizeNum">Color [0,0,0] in Size: 54</H1>
+  <p>Image Color picker here</p>
+  <input type="range" min="49" max="72" value="54" id="ringSize">
+  <input type="range" min="0" max="255" value="0" id="red">
+  <input type="range" min="0" max="255" value="0" id="green">
+  <input type="range" min="0" max="255" value="0" id="blue">
+
+  <br>
+
+
+  <button type="button" id="brass" >Brass</button>
+  <button type="button" id="steel" >Steel</button>
+  <button type="button" id="silver">Silver</button>
+    
+  <!-- <select>
+    <option value="union" selected>Union</option>
+    <option value="difference">Difference</option>
+    <option value="intersection">Intersection</option>
+  </select> -->
+  
+  <br />
+  <canvas id="output"></canvas>
+</body>
+
+
+</html>
