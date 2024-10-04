@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { EdgesGeometry, LineSegments,LineBasicMaterial, BoxGeometry, BufferAttribute, BufferGeometry, IcosahedronGeometry, Mesh as ThreeMesh, MeshLambertMaterial, MeshNormalMaterial, MeshBasicMaterial, PerspectiveCamera, PointLight, Scene, WebGLRenderer } from "./node_modules/three/build/three.module.js"
-// import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
+import * as three from "./node_modules/three/build/three.module.js";
+import { OrbitControls } from "./OrbitControls.js";
 
 import Module from './node_modules/manifold-3d/manifold.js';
 import ringGen from './ring.js';
@@ -25,30 +25,65 @@ const { Manifold } = wasm;
 
 // Define our set of materials
 const materials = [
-  new MeshNormalMaterial({ flatShading: true }),
-  new MeshLambertMaterial({ color: 'red', flatShading: true }),
-  new MeshLambertMaterial({ color: 'blue', flatShading: true })
+  new three.MeshNormalMaterial({ flatShading: true }),
+  new three.MeshLambertMaterial({ color: 'red', flatShading: true }),
+  new three.MeshLambertMaterial({ color: 'blue', flatShading: true })
 ];
 
-const brass = new MeshBasicMaterial({
+const brass = new three.MeshBasicMaterial({
   color: 0xf75c03,
   wireframe: true //set's the wireframe
 });
 
-const steel = new MeshBasicMaterial({
+const steel = new three.MeshBasicMaterial({
   color: 0xAAAAAA
 });
 
-const silver = new MeshBasicMaterial({
+const silver = new three.MeshBasicMaterial({
   color: 0xFFFFFF,
   wireframe: true //set's the wireframe
 });
+
+var vertexShader = `
+    varying vec3 vUv; 
+
+    void main() {
+      vUv = position; 
+
+      vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * modelViewPosition; 
+    }
+`;
+var fragmentShader = `
+      uniform vec3 colorA; 
+      uniform vec3 colorB; 
+      varying vec3 vUv;
+
+      void main() {
+        gl_FragColor = vec4(mix(colorA, colorB, vUv.z), 1.0);
+      }
+`;
+
+var  uniforms = {
+  colorB: {type: 'vec3', value: new three.Color(0xACB6E5)},
+  colorA: {type: 'vec3', value: new three.Color(0x74ebd5)},
+  thickness: {value: 1.5}
+}
+
+var cadDraw = new three.ShaderMaterial({
+  uniforms,
+  vertexShader: vertexShader,
+  fragmentShader: fragmentShader
+});
+
 var selectedMaterial = materials;
 selectedMaterial.name = "Materials";
 
-const result = new ThreeMesh(undefined, materials);
-// const edges = new EdgesGeometry( result ); 
-// const line = new LineSegments(edges, new LineBasicMaterial( { color: 0xffffff } ) ); 
+var edges;
+var line;
+
+const result = new three.Mesh(undefined, materials);
+
 
 // Set up Manifold IDs corresponding to materials
 const firstID = Manifold.reserveIDs(materials.length);
@@ -59,27 +94,29 @@ const id2matIndex = new Map();
 ids.forEach((id, idx) => id2matIndex.set(id, idx));
 
 // Set up Three.js scene
-const scene = new Scene();
-const camera = new PerspectiveCamera(30, 1, 0.01, 100);
+const scene = new three.Scene();
+const camera = new three.PerspectiveCamera(30, 1, 0.01, 1000);
 camera.position.z = 80;
-camera.add(new PointLight(0xffffff, 1));
+camera.add(new three.PointLight(0xffffff, 1));
 scene.add(camera);
 scene.add(result);
-// const controls = new OrbitControls( camera, renderer.domElement );
-// controls.update();
-// scene.add(line);
 
 // Set up Three.js renderer
 const output = document.querySelector('#output');
-const renderer = new WebGLRenderer({ canvas: output, antialias: true });
+const renderer = new three.WebGLRenderer({ canvas: output, antialias: true });
+renderer.setClearColor(0x404040);
 const dim = output.getBoundingClientRect();
 renderer.setSize(dim.width, dim.height);
 renderer.setAnimationLoop(function (time) {
-  // controls.update();
+  // result.position.x = time/ 100;
   result.rotation.x = time / 2000;
   result.rotation.y = time / 1000;
   renderer.render(scene, camera);
 });
+
+var controls = new OrbitControls(camera, renderer.domElement);
+controls.target = new three.Vector3(0, 2.5, 0);
+controls.update();
 
 // // Convert Three.js input meshes to Manifolds
 // const manifoldCube = Manifold.cube([0.2, 0.2, 0.4], true);
@@ -100,15 +137,21 @@ function updateRingSize() {
   const green = document.getElementById("green").value;
   const blue = document.getElementById("blue").value;
   document.getElementById("ringSizeNum").innerHTML = selectedMaterial.name + " Color [" + red + "," + green + "," + blue + "] in Size " + ringSize;
-console.log(selectedMaterial);
   var manifoldRing = ringGen(ringSize, [red, green, blue]);
   
   if (result.geometry) {
     result.geometry.dispose();
   }
+  // Dispose and remove old edges and line from the scene
+  if (edges) edges.dispose();
+  if (line) scene.remove(line);
 
   result.material = selectedMaterial;
-  result.geometry = mesh2geometry(manifoldRing.getMesh());
+  result.geometry = mesh2geometry(manifoldRing.getMesh()); //.rotate([-45,-45,-10])
+  edges = new three.EdgesGeometry( result.geometry, 20 ); 
+  line = new three.LineSegments(edges, new three.LineBasicMaterial( { color: 0xffffff } ) ); 
+  scene.add(line);
+
 }
 
 // Attach the function to the onchange event
@@ -135,6 +178,12 @@ document.getElementById("silver").onclick = function(){
   updateRingSize();
 }
 
+document.getElementById("cadDraw").onclick = function(){
+  selectedMaterial = cadDraw;
+  selectedMaterial.name = "CadDraw"
+  updateRingSize();
+}
+
 updateRingSize();
 
 
@@ -147,11 +196,11 @@ updateRingSize();
 
 // Convert Manifold Mesh to Three.js BufferGeometry
 function mesh2geometry(mesh) {
-  const geometry = new BufferGeometry();
+  const geometry = new three.BufferGeometry();
   // Assign buffers
   geometry.setAttribute(
-    'position', new BufferAttribute(mesh.vertProperties, 3));
-  geometry.setIndex(new BufferAttribute(mesh.triVerts, 1));
+    'position', new three.BufferAttribute(mesh.vertProperties, 3));
+  geometry.setIndex(new three.BufferAttribute(mesh.triVerts, 1));
   // Create a group (material) for each ID. Note that there may be multiple
   // triangle runs returned with the same ID, though these will always be
   // sequential since they are sorted by ID. In this example there are two runs

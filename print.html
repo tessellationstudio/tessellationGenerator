@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <title>Manifold - three.js Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      size: 4in 6in portrait;
+      color: aqua;
+      margin: 0;
+      background-color: #f7f7f7;
+      font-family: 'Rubik', sans-serif;
+      font-size: 16px;
+      line-height: 24px;
+      color: rgba(0, 0, 0, .87);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    div{
+        width: 400;
+        height: 600;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vw;
+      max-width: 600px;
+      max-height: 600px;
+    }
+  </style>
+  <script src="./qrcode.min.js"></script>
+</head>
+
+<body>
+    <div>
+        <img src="./ring.png">
+        <hr>
+        <H1 id="ringSizeNum">Color [0,0,0] in Size: 54 of Brass</H1>
+
+    </div>
+  <br>
+
+  <div id="qrcode"></div>
+  <br>
+
+  <!-- <canvas id="output"></canvas> -->
+
+</body>
+
+<script>
+var ringSize = 52;
+var red = 52;
+var green = 52;
+var blue = 52;
+
+document.getElementById("ringSizeNum").innerHTML = selectedMaterial.name + " Color [" + red + "," + green + "," + blue + "] in Size " + ringSize;
+
+var qrcode = new QRCode(document.getElementById("qrcode"), {
+    text: "tessellationstudio.com/hexRing/" + 
+    Number(ringSize).toString(16).padStart(2, '0') +
+    Number(red).toString(16).padStart(2, '0') +
+    Number(green).toString(16).padStart(2, '0') +
+    Number(blue).toString(16).padStart(2, '0'),
+    width: 128,
+    height: 128,
+  }
+  );
+</script>
+
+</html>
