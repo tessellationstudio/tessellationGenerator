@@ -150,7 +150,7 @@ function updateRingSize() {
   result.geometry = mesh2geometry(manifoldRing.getMesh()); //.rotate([-45,-45,-10])
   edges = new three.EdgesGeometry( result.geometry, 20 ); 
   line = new three.LineSegments(edges, new three.LineBasicMaterial( { color: 0xffffff } ) ); 
-  scene.add(line);
+  // scene.add(line);
 
 }
 

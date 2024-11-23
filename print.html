@@ -6,22 +6,42 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+    html {
+        height: 100%;
+    }
     body {
       size: 4in 6in portrait;
-      color: aqua;
       margin: 0;
-      background-color: #f7f7f7;
-      font-family: 'Rubik', sans-serif;
-      font-size: 16px;
-      line-height: 24px;
-      color: rgba(0, 0, 0, .87);
-      font-weight: 400;
-      -webkit-font-smoothing: antialiased;
+    padding: 0;
+    min-height: 100%;
+    box-sizing: border-box;
+    background-color: #000000;
+      font-family: 'Monaco', 'Courier New', Courier, monospace;
+      /* font-size: 16px; */
+      /* line-height: 24px; */
+      /* color: rgba(0, 0, 0, .87); */
+      /* font-weight: 400; */
+      /* -webkit-font-smoothing: antialiased; */
     }
 
-    div{
-        width: 400;
-        height: 600;
+    /* 4"x6" in 203dpi */
+    div.label {
+        width: 812px;
+        height: 1218px;
+        background-color: #FFFFFF;
+        margin: 0 auto; /* To center the label horizontally */
+        padding: 0;
+        border: blue solid 5px;
+    }
+
+    div#qrcode{
+        border: red solid 2px;
+    }
+
+    .ringImg {
+        margin: 10px auto;
+        display: block;
+        width: 90%;
     }
 
     canvas {
@@ -36,15 +56,14 @@
 </head>
 
 <body>
-    <div>
-        <img src="./ring.png">
+    <div class="label">
+        <img class="ringImg" src="./sphere.png">
         <hr>
-        <H1 id="ringSizeNum">Color [0,0,0] in Size: 54 of Brass</H1>
-
+        <H1 id="ringSizeNum"></H1>
+        <div id="qrcode"></div>
     </div>
   <br>
 
-  <div id="qrcode"></div>
   <br>
 
   <!-- <canvas id="output"></canvas> -->
@@ -53,9 +72,11 @@
 
 <script>
 var ringSize = 52;
-var red = 52;
-var green = 52;
-var blue = 52;
+var red = 245;
+var green = 145;
+var blue = 123;
+var selectedMaterial = {};
+selectedMaterial.name = "Brass";
 
 document.getElementById("ringSizeNum").innerHTML = selectedMaterial.name + " Color [" + red + "," + green + "," + blue + "] in Size " + ringSize;
 
@@ -65,8 +86,8 @@ var qrcode = new QRCode(document.getElementById("qrcode"), {
     Number(red).toString(16).padStart(2, '0') +
     Number(green).toString(16).padStart(2, '0') +
     Number(blue).toString(16).padStart(2, '0'),
-    width: 128,
-    height: 128,
+    width: 256,
+    height: 256,
   }
   );
 </script>
