@@ -1,19 +1,6 @@
-// Copyright 2024 The Manifold Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import * as three from "./node_modules/three/build/three.module.js";
 import { OrbitControls } from "./OrbitControls.js";
+import { RGBELoader } from "./RGBELoader.js";
 
 import Module from './node_modules/manifold-3d/manifold.js';
 import ringGen from './ring.js';
@@ -23,64 +10,109 @@ const wasm = await Module();
 wasm.setup();
 const { Manifold } = wasm;
 
+
+const brassMaterial = new three.ShaderMaterial({
+  uniforms: {
+    envMap: { value: null },
+    roughness: { value: 0.4 },
+    metalness: { value: 1.0 }
+  },
+  vertexShader: `
+    varying vec3 vReflect;
+    void main() {
+      vec3 worldNormal = normalize(normalMatrix * normal);
+      vec3 cameraToVertex = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);
+      vReflect = reflect(-cameraToVertex, worldNormal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform samplerCube envMap;
+    uniform float roughness;
+    uniform float metalness;
+    varying vec3 vReflect;
+    void main() {
+      vec3 baseColor = vec3(0.78, 0.56, 0.12);
+      vec3 reflection = textureCube(envMap, vReflect).rgb;
+      vec3 finalColor = mix(baseColor, reflection, metalness);
+      gl_FragColor = vec4(finalColor, 1.0);
+    }
+  `
+});
+
+const silverMaterial = new three.ShaderMaterial({
+  uniforms: {
+    envMap: { value: null },
+    roughness: { value: 0.1 },
+    metalness: { value: 1.0 }
+  },
+  vertexShader: `
+    varying vec3 vReflect;
+    void main() {
+      vec3 worldNormal = normalize(normalMatrix * normal);
+      vec3 cameraToVertex = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);
+      vReflect = reflect(-cameraToVertex, worldNormal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform samplerCube envMap;
+    uniform float roughness;
+    uniform float metalness;
+    varying vec3 vReflect;
+    void main() {
+      vec3 baseColor = vec3(0.8, 0.8, 0.8);
+      vec3 reflection = textureCube(envMap, vReflect).rgb;
+      vec3 finalColor = mix(baseColor, reflection, metalness);
+      gl_FragColor = vec4(finalColor, 1.0);
+    }
+  `
+});
+
+const steelMaterial = new three.ShaderMaterial({
+  uniforms: {
+    envMap: { value: null },
+    roughness: { value: 0.6 },
+    metalness: { value: 0.8 }
+  },
+  vertexShader: `
+    varying vec3 vReflect;
+    void main() {
+      vec3 worldNormal = normalize(normalMatrix * normal);
+      vec3 cameraToVertex = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);
+      vReflect = reflect(-cameraToVertex, worldNormal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform samplerCube envMap;
+    uniform float roughness;
+    uniform float metalness;
+    varying vec3 vReflect;
+    void main() {
+      vec3 baseColor = vec3(0.5, 0.5, 0.6);
+      vec3 reflection = textureCube(envMap, vReflect).rgb;
+      vec3 finalColor = mix(baseColor, reflection, metalness);
+      gl_FragColor = vec4(finalColor, 1.0);
+    }
+  `
+});
+
+const testMaterial = new three.MeshStandardMaterial({
+  envMap: {value: null},
+  metalness: 1.0,
+  roughness: 0.0
+});
+
 // Define our set of materials
 const materials = [
-  new three.MeshNormalMaterial({ flatShading: true }),
-  new three.MeshLambertMaterial({ color: 'red', flatShading: true }),
-  new three.MeshLambertMaterial({ color: 'blue', flatShading: true })
+  brassMaterial,
+  silverMaterial,
+  steelMaterial
 ];
-
-const brass = new three.MeshBasicMaterial({
-  color: 0xf75c03,
-  wireframe: true //set's the wireframe
-});
-
-const steel = new three.MeshBasicMaterial({
-  color: 0xAAAAAA
-});
-
-const silver = new three.MeshBasicMaterial({
-  color: 0xFFFFFF,
-  wireframe: true //set's the wireframe
-});
-
-var vertexShader = `
-    varying vec3 vUv; 
-
-    void main() {
-      vUv = position; 
-
-      vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-      gl_Position = projectionMatrix * modelViewPosition; 
-    }
-`;
-var fragmentShader = `
-      uniform vec3 colorA; 
-      uniform vec3 colorB; 
-      varying vec3 vUv;
-
-      void main() {
-        gl_FragColor = vec4(mix(colorA, colorB, vUv.z), 1.0);
-      }
-`;
-
-var  uniforms = {
-  colorB: {type: 'vec3', value: new three.Color(0xACB6E5)},
-  colorA: {type: 'vec3', value: new three.Color(0x74ebd5)},
-  thickness: {value: 1.5}
-}
-
-var cadDraw = new three.ShaderMaterial({
-  uniforms,
-  vertexShader: vertexShader,
-  fragmentShader: fragmentShader
-});
 
 var selectedMaterial = materials;
 selectedMaterial.name = "Materials";
-
-var edges;
-var line;
 
 const result = new three.Mesh(undefined, materials);
 
@@ -93,6 +125,35 @@ const ids = Array.from({ length: materials.length }, (_, idx) => firstID + idx);
 const id2matIndex = new Map();
 ids.forEach((id, idx) => id2matIndex.set(id, idx));
 
+// Set up Three.js renderer
+const output = document.querySelector('#output');
+const renderer = new three.WebGLRenderer({ canvas: output, antialias: true });
+renderer.setClearColor(0x404040);
+const dim = output.getBoundingClientRect();
+renderer.setSize(dim.width, dim.height);
+
+// Load HDR environment map with PMREMGenerator
+const pmremGenerator = new three.PMREMGenerator(renderer);
+const hdrLoader = new RGBELoader();
+
+hdrLoader.load('./frozen_lake_by_pine_trees_8k.hdr', (hdrTexture) => {
+  hdrTexture.mapping = three.EquirectangularReflectionMapping;
+
+  const hdrEnvMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+
+  hdrTexture.dispose();
+  pmremGenerator.dispose();
+
+  scene.environment = hdrEnvMap;
+  scene.background = hdrEnvMap;
+
+  materials.forEach((material) => {
+    material.uniforms.envMap.value = hdrEnvMap.clone();
+  });
+
+  updateRingSize(hdrEnvMap);
+});
+
 // Set up Three.js scene
 const scene = new three.Scene();
 const camera = new three.PerspectiveCamera(30, 1, 0.01, 1000);
@@ -101,12 +162,6 @@ camera.add(new three.PointLight(0xffffff, 1));
 scene.add(camera);
 scene.add(result);
 
-// Set up Three.js renderer
-const output = document.querySelector('#output');
-const renderer = new three.WebGLRenderer({ canvas: output, antialias: true });
-renderer.setClearColor(0x404040);
-const dim = output.getBoundingClientRect();
-renderer.setSize(dim.width, dim.height);
 renderer.setAnimationLoop(function (time) {
   // result.position.x = time/ 100;
   result.rotation.x = time / 2000;
@@ -118,40 +173,34 @@ var controls = new OrbitControls(camera, renderer.domElement);
 controls.target = new three.Vector3(0, 2.5, 0);
 controls.update();
 
-// // Convert Three.js input meshes to Manifolds
-// const manifoldCube = Manifold.cube([0.2, 0.2, 0.4], true);
-// const manifoldCut = Manifold.cube([0.1, 0.3, 0.1], true);
-// const manifoldRing = ringGen(54,[10,34,23]);
 
-// // Set up UI for operations
-// function csg(operation) {
-//   result.geometry?.dispose();
-//   result.geometry = mesh2geometry(manifoldRing.getMesh());
-//   // result.geometry = mesh2geometry(
-//   //   Manifold[operation](manifoldCube, manifoldRing).getMesh());
-// }
-
-function updateRingSize() {
+function updateRingSize(envMapIn) {
+  
+  console.time('Ring Update');
   const ringSize = document.getElementById("ringSize").value;
   const red = document.getElementById("red").value;
   const green = document.getElementById("green").value;
   const blue = document.getElementById("blue").value;
   document.getElementById("ringSizeNum").innerHTML = selectedMaterial.name + " Color [" + red + "," + green + "," + blue + "] in Size " + ringSize;
-  var manifoldRing = ringGen(ringSize, [red, green, blue]);
   
+  console.time('Ringgen Call');
+  var manifoldRing = ringGen(ringSize, [red, green, blue]);
+  console.timeEnd('Ringgen Call');
+
   if (result.geometry) {
     result.geometry.dispose();
   }
-  // Dispose and remove old edges and line from the scene
-  if (edges) edges.dispose();
-  if (line) scene.remove(line);
 
-  result.material = selectedMaterial;
+  const testMaterial = new three.MeshStandardMaterial({
+    envMap: envMapIn,
+    metalness: 1.0,
+    roughness: 0.0,
+    flatShading: true
+  });
+
+  result.material = testMaterial;
   result.geometry = mesh2geometry(manifoldRing.getMesh()); //.rotate([-45,-45,-10])
-  edges = new three.EdgesGeometry( result.geometry, 20 ); 
-  line = new three.LineSegments(edges, new three.LineBasicMaterial( { color: 0xffffff } ) ); 
-  // scene.add(line);
-
+  console.timeEnd('Ring Update');
 }
 
 // Attach the function to the onchange event
@@ -160,31 +209,29 @@ document.getElementById("red").onchange = updateRingSize;
 document.getElementById("green").onchange = updateRingSize;
 document.getElementById("blue").onchange = updateRingSize;
 
-document.getElementById("brass").onclick = function(){
-  selectedMaterial = brass;
+document.getElementById("brass").onclick = function () {
+  selectedMaterial = brassMaterial;
   selectedMaterial.name = "Brass";
   updateRingSize();
 }
 
-document.getElementById("steel").onclick = function(){
-  selectedMaterial = steel;
+document.getElementById("steel").onclick = function () {
+  selectedMaterial = steelMaterial;
   selectedMaterial.name = "Steel"
   updateRingSize();
 }
 
-document.getElementById("silver").onclick = function(){
-  selectedMaterial = silver;
+document.getElementById("silver").onclick = function () {
+  selectedMaterial = silverMaterial;
   selectedMaterial.name = "Silver"
   updateRingSize();
 }
 
-document.getElementById("cadDraw").onclick = function(){
+document.getElementById("cadDraw").onclick = function () {
   selectedMaterial = cadDraw;
   selectedMaterial.name = "CadDraw"
   updateRingSize();
 }
-
-updateRingSize();
 
 
 
@@ -197,11 +244,15 @@ updateRingSize();
 // Convert Manifold Mesh to Three.js BufferGeometry
 function mesh2geometry(mesh) {
   const geometry = new three.BufferGeometry();
-  // Assign buffers
   geometry.setAttribute(
-    'position', new three.BufferAttribute(mesh.vertProperties, 3));
+    'position', new three.BufferAttribute(mesh.vertProperties, 3)
+  );
   geometry.setIndex(new three.BufferAttribute(mesh.triVerts, 1));
-  // Create a group (material) for each ID. Note that there may be multiple
+
+  // Compute normals for the geometry
+  geometry.computeVertexNormals();
+
+    // Create a group (material) for each ID. Note that there may be multiple
   // triangle runs returned with the same ID, though these will always be
   // sequential since they are sorted by ID. In this example there are two runs
   // for the MeshNormalMaterial, one corresponding to each input mesh that had
@@ -219,6 +270,19 @@ function mesh2geometry(mesh) {
       start = end;
     }
   }
+
   return geometry;
 }
 
+// // Convert Three.js input meshes to Manifolds
+// const manifoldCube = Manifold.cube([0.2, 0.2, 0.4], true);
+// const manifoldCut = Manifold.cube([0.1, 0.3, 0.1], true);
+// const manifoldRing = ringGen(54,[10,34,23]);
+
+// // Set up UI for operations
+// function csg(operation) {
+//   result.geometry?.dispose();
+//   result.geometry = mesh2geometry(manifoldRing.getMesh());
+//   // result.geometry = mesh2geometry(
+//   //   Manifold[operation](manifoldCube, manifoldRing).getMesh());
+// }

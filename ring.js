@@ -10,10 +10,13 @@ const { Manifold } = wasm;
 // var ringSize = 54;
 var wallThickness = 2;
 var segments = 256;
+// var segments = 16;
+
 // var seed = "#AC";
 // var color = [3,4,15];
 
 function ringGen(ringSize, color){
+  console.time('Ring Generation');
 
 // Ring body
 const ringBody = Manifold.cylinder(30, ((ringSize / Math.PI) + wallThickness*2)/2, ((ringSize / Math.PI) + wallThickness)/2, segments, true).rotate([90,0,0]);
@@ -121,6 +124,7 @@ const ringMesh = ringBody
 //                 .subtract(backCut)
 //                 .subtract(baseCube);
 
+console.timeEnd('Ring Generation');
 return ringMesh;
 
 }
