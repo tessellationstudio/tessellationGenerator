@@ -10,7 +10,6 @@ const wasm = await Module();
 wasm.setup();
 const { Manifold } = wasm;
 
-
 const brassMaterial = new three.ShaderMaterial({
   uniforms: {
     envMap: { value: null },
@@ -98,12 +97,6 @@ const steelMaterial = new three.ShaderMaterial({
   `
 });
 
-const testMaterial = new three.MeshStandardMaterial({
-  envMap: {value: null},
-  metalness: 1.0,
-  roughness: 0.0
-});
-
 // Define our set of materials
 const materials = [
   brassMaterial,
@@ -115,7 +108,6 @@ var selectedMaterial = materials;
 selectedMaterial.name = "Materials";
 
 const result = new three.Mesh(undefined, materials);
-
 
 // Set up Manifold IDs corresponding to materials
 const firstID = Manifold.reserveIDs(materials.length);
@@ -175,14 +167,14 @@ controls.update();
 
 
 function updateRingSize(envMapIn) {
-  
+
   console.time('Ring Update');
   const ringSize = document.getElementById("ringSize").value;
   const red = document.getElementById("red").value;
   const green = document.getElementById("green").value;
   const blue = document.getElementById("blue").value;
   document.getElementById("ringSizeNum").innerHTML = selectedMaterial.name + " Color [" + red + "," + green + "," + blue + "] in Size " + ringSize;
-  
+
   console.time('Ringgen Call');
   var manifoldRing = ringGen(ringSize, [red, green, blue]);
   console.timeEnd('Ringgen Call');
@@ -252,7 +244,7 @@ function mesh2geometry(mesh) {
   // Compute normals for the geometry
   geometry.computeVertexNormals();
 
-    // Create a group (material) for each ID. Note that there may be multiple
+  // Create a group (material) for each ID. Note that there may be multiple
   // triangle runs returned with the same ID, though these will always be
   // sequential since they are sorted by ID. In this example there are two runs
   // for the MeshNormalMaterial, one corresponding to each input mesh that had
